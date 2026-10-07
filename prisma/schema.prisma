@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  mobile        String?   @unique
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookings      Booking[]
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("SUPER_ADMIN")
+  createdAt    DateTime @default(now())
+}
+
+model Cinema {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  state       String
+  country     String
+  phone       String
+  screens     Screen[]
+  createdAt   DateTime @default(now())
+}
+
+model Screen {
+  id          String   @id @default(cuid())
+  cinemaId    String
+  cinema      Cinema   @relation(fields: [cinemaId], references: [id])
+  name        String
+  capacity    Int
+  seatLayout  String   @default("standard")
+  shows       Show[]
+  createdAt   DateTime @default(now())
+}
+
+model Movie {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  synopsis       String
+  description    String
+  genre          String
+  language       String
+  duration       Int
+  certification  String
+  rating         Float
+  releaseDate    DateTime
+  posterUrl      String
+  backdropUrl    String
+  trailerUrl     String?
+  cast           String[]
+  director       String
+  status         String   @default("NOW_SHOWING")
+  featured       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  shows          Show[]
+}
+
+model Show {
+  id          String      @id @default(cuid())
+  movieId     String
+  movie       Movie       @relation(fields: [movieId], references: [id])
+  screenId    String
+  screen      Screen      @relation(fields: [screenId], references: [id])
+  date        DateTime
+  startTime   String
+  endTime     String
+  status      String      @default("ACTIVE")
+  createdAt   DateTime    @default(now())
+  showSeats   ShowSeat[]
+  bookings    Booking[]
+}
+
+model ShowSeat {
+  id        String   @id @default(cuid())
+  showId    String
+  show      Show     @relation(fields: [showId], references: [id])
+  seatId    String
+  seatNumber String
+  row       String
+  category  String
+  price     Float
+  status    String   @default("AVAILABLE")
+  lockedUntil DateTime?
+  updatedAt DateTime @updatedAt
+
+  @@unique([showId, seatNumber])
+}
+
+model Seat {
+  id        String   @id @default(cuid())
+  screenId  String
+  seatNumber String
+  row       String
+  category  String
+  price     Float
+  status    String   @default("AVAILABLE")
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  bookingId       String   @unique
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  showId          String
+  show            Show     @relation(fields: [showId], references: [id])
+  customerName    String
+  mobile          String
+  email           String?
+  seats           String[]
+  ticketAmount    Float
+  foodAmount      Float    @default(0)
+  convenienceFee  Float    @default(0)
+  gst             Float    @default(0)
+  totalAmount     Float
+  status          String   @default("CONFIRMED")
+  paymentStatus   String   @default("PAID")
+  transactionId   String?
+  paymentMethod   String?
+  foodItems       Json?
+  cancellationFee Float    @default(0)
+  refundAmount    Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  payments        Payment[]
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  bookingId     String
+  booking       Booking  @relation(fields: [bookingId], references: [id])
+  transactionId String   @unique
+  amount        Float
+  method        String
+  status        String   @default("SUCCESS")
+  gateway       String   @default("DEMO")
+  createdAt     DateTime @default(now())
+}
+
+model FoodItem {
+  id          String  @id @default(cuid())
+  name        String
+  category    String
+  price       Float
+  imageUrl    String?
+  description String?
+  available   Boolean @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model FoodOrder {
+  id        String   @id @default(cuid())
+  bookingId String?
+  items     Json
+  total     Float
+  status    String   @default("PLACED")
+  createdAt DateTime @default(now())
+}
+
+model Offer {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  discount    Float
+  code        String?
+  validUntil  DateTime?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
